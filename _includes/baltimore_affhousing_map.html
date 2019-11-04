@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Baltimore City Affordable Housing Landscape</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.10/esri/css/main.css">
+  <script src="https://js.arcgis.com/4.10/"></script>
+
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    #infoDiv{
+      padding: 8px;
+    }
+
+	#optionsDiv {
+      background-color: dimgray;
+      color: white;
+      padding: 10px;
+      width: 350px;
+    }
+
+    .esri-popup .esri-popup-header .esri-title {
+      font-size: 18px;
+      font-weight: bolder;
+    }
+
+    .esri-popup .esri-popup-body .esri-popup-content {
+      font-size: 14px;
+    }
+  </style>
+
+  <script>
+    require([
+	"esri/Map",
+	"esri/views/MapView",
+	"esri/layers/GroupLayer",
+	"esri/layers/FeatureLayer",
+	"esri/renderers/smartMapping/creators/color",
+	"esri/widgets/Legend",
+	"esri/widgets/BasemapToggle",
+	"esri/widgets/Search",
+	"esri/widgets/LayerList",
+	"esri/layers/GraphicsLayer",
+ 	"esri/tasks/QueryTask",
+    	"esri/tasks/support/Query"
+    ], function(
+      Map,
+	  MapView,
+	  GroupLayer,
+	  FeatureLayer,
+	  colorRendererCreator,
+	  Legend,
+	  BasemapToggle,
+	  Search,
+	  LayerList,
+	  GraphicsLayer,
+	  QueryTask,
+	  Query
+    ) {
+
+	  /******************************************************************
+	  *		Grab FeatureLayers from AGOL Online and Organize Groups     *
+	  ******************************************************************/
+
+	  // Transit Layers
+	  var circulatorStops = new FeatureLayer({
+		url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/13?token=_t7adUpk13POvxBLthnNumDc6gPqBtq-QJL43p0Sz_xWLa4xSQl0AgbO3xK5GK1R6hmNAcyAlIATQUtq75q6SYw-QHz72eVSqOMhv8cMo-KM11ItSKiivhEyti8jc7AqjA_tw0ZbRIWFhSq-VhOQEzlQDBAixJywi0Jg8YLIyLz2MhdmDQJCTdC5jrq_5Pokyl3tPFOB7A3iWE-Dz0qKOzpRL3tycEPiFU6WS6EL4S-ytUnxDpIB70mzQ4hkq-X4",
+		title: "Charm City Circulator Bus Stops",
+		visible: false
+	  });
+
+	  var circulatorRoute = new FeatureLayer({
+		url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/14?token=_t7adUpk13POvxBLthnNumDc6gPqBtq-QJL43p0Sz_xWLa4xSQl0AgbO3xK5GK1R6hmNAcyAlIATQUtq75q6SYw-QHz72eVSqOMhv8cMo-KM11ItSKiivhEyti8jc7AqjA_tw0ZbRIWFhSq-VhOQEzlQDBAixJywi0Jg8YLIyLz2MhdmDQJCTdC5jrq_5Pokyl3tPFOB7A3iWE-Dz0qKOzpRL3tycEPiFU6WS6EL4S-ytUnxDpIB70mzQ4hkq-X4",
+		title: "Charm City Circulator Bus Route",
+		visible: false
+	  });
+
+	  var circulatorServiceArea = new FeatureLayer({
+		url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/15?token=FNVrss04yXzG4hF3Dn4N8McLM5fQBGhP1cnd1VxK7ApkCVteHgmmh4wu_8Rq_8N_fsXrM4uLe5AvSd6a1t1mlGHo0TMJr24s3ncSHaQwB6vMZ3IwYsW2HGfDOIASXwCPk93zYNKa5rLEe2l3Onm3eiPbYNMH4pU882DT9dmte8Koo4uUVpl7tN1fyYeo0sX6q7PfRVFDlyFnHiC5xXfge9M-XnjE9T4_lxX0LNXLYjoTfq9WEBd4WE-7j0Cjt_XS",
+		title: "Charm City Circulator Service Area",
+		visible: false,
+		opacity: 0.65
+	  });
+
+	  var transitGroupLayer = new GroupLayer({
+		title: "Public Transit",
+		visible: false,
+		visibilityMode: "independent",
+		layers: [circulatorStops, circulatorRoute, circulatorServiceArea]
+	  });
+
+	  // Emergency Services Layers
+	  var hospitals = new FeatureLayer({
+		url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/8?token=FNVrss04yXzG4hF3Dn4N8McLM5fQBGhP1cnd1VxK7ApkCVteHgmmh4wu_8Rq_8N_fsXrM4uLe5AvSd6a1t1mlGHo0TMJr24s3ncSHaQwB6vMZ3IwYsW2HGfDOIASXwCPk93zYNKa5rLEe2l3Onm3eiPbYNMH4pU882DT9dmte8Koo4uUVpl7tN1fyYeo0sX6q7PfRVFDlyFnHiC5xXfge9M-XnjE9T4_lxX0LNXLYjoTfq9WEBd4WE-7j0Cjt_XS",
+		title: "Hospitals",
+		visible: false
+	  });
+
+	  var hospitalServiceArea = new FeatureLayer({
+		url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/11?token=FNVrss04yXzG4hF3Dn4N8McLM5fQBGhP1cnd1VxK7ApkCVteHgmmh4wu_8Rq_8N_fsXrM4uLe5AvSd6a1t1mlGHo0TMJr24s3ncSHaQwB6vMZ3IwYsW2HGfDOIASXwCPk93zYNKa5rLEe2l3Onm3eiPbYNMH4pU882DT9dmte8Koo4uUVpl7tN1fyYeo0sX6q7PfRVFDlyFnHiC5xXfge9M-XnjE9T4_lxX0LNXLYjoTfq9WEBd4WE-7j0Cjt_XS",
+		title: "Hospitals Service Area",
+		visible: false,
+		opacity: 0.65
+	  });
+
+	  var emergencyGroupLayer = new GroupLayer({
+		title: "Emergency Services",
+		visible: false,
+		visibilityMode: "independent",
+		layers: [hospitals, hospitalServiceArea]
+	  });
+
+	  // Food Deserts Layer
+	  var foodDeserts = new FeatureLayer({
+		url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/19?token=FNVrss04yXzG4hF3Dn4N8McLM5fQBGhP1cnd1VxK7ApkCVteHgmmh4wu_8Rq_8N_fsXrM4uLe5AvSd6a1t1mlGHo0TMJr24s3ncSHaQwB6vMZ3IwYsW2HGfDOIASXwCPk93zYNKa5rLEe2l3Onm3eiPbYNMH4pU882DT9dmte8Koo4uUVpl7tN1fyYeo0sX6q7PfRVFDlyFnHiC5xXfge9M-XnjE9T4_lxX0LNXLYjoTfq9WEBd4WE-7j0Cjt_XS",
+		title: "Food Deserts",
+		opacity: 0.65,
+		visible: false
+	  });
+
+	  // Work and Retail Layer
+	  var workRetail = new FeatureLayer({
+		url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/17?token=FNVrss04yXzG4hF3Dn4N8McLM5fQBGhP1cnd1VxK7ApkCVteHgmmh4wu_8Rq_8N_fsXrM4uLe5AvSd6a1t1mlGHo0TMJr24s3ncSHaQwB6vMZ3IwYsW2HGfDOIASXwCPk93zYNKa5rLEe2l3Onm3eiPbYNMH4pU882DT9dmte8Koo4uUVpl7tN1fyYeo0sX6q7PfRVFDlyFnHiC5xXfge9M-XnjE9T4_lxX0LNXLYjoTfq9WEBd4WE-7j0Cjt_XS",
+		title: "Work & Retail Zoning",
+		opacity: 0.80,
+		visible: false
+	  });
+
+	  // Housing Layers
+	  var affordable = new FeatureLayer({
+		url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/2?token=7laxKqEtw2PaDRr-Yb466RFWtFuvhFW7JNOR6OZ55hHx8H3KJvTmfNlXExd5nQV-1ZRRiJ_6aHMlODtx_rveVjD1Lo07I8y8abLphP5rafZFpqdHAgZDfoyIIgfrF0v2q3hRJcM2ylKjUi8YAzB7PGEO-wvqGqwgr80oYn5jo-91dbcG729wVmv7jzxvA7fFELuSEdGf-2xl5u4qfm12jde1L2mSscHdlf2XkIQhww2jjzpEaxFho4RAzzubHPhF",
+		title: "Affordable Housing Projects"
+	  });
+
+	  var marketRate = new FeatureLayer({
+		url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/1?token=7laxKqEtw2PaDRr-Yb466RFWtFuvhFW7JNOR6OZ55hHx8H3KJvTmfNlXExd5nQV-1ZRRiJ_6aHMlODtx_rveVjD1Lo07I8y8abLphP5rafZFpqdHAgZDfoyIIgfrF0v2q3hRJcM2ylKjUi8YAzB7PGEO-wvqGqwgr80oYn5jo-91dbcG729wVmv7jzxvA7fFELuSEdGf-2xl5u4qfm12jde1L2mSscHdlf2XkIQhww2jjzpEaxFho4RAzzubHPhF",
+		title: "Market Rate Housing Projects"
+	  });
+
+	  var housingGroupLayer = new GroupLayer({
+		title: "Housing Projects",
+		visible: true,
+		visibilityMode: "independent",
+		layers: [affordable, marketRate]
+	  });
+
+	  /*********************************************************************
+	  *         Special Layers to be used for Query and Renderer           *
+	  *********************************************************************/
+	  // Statistic Polygon FeatureLayer to be used in the SmartMapping Renderer
+	  var layer = new FeatureLayer({
+        title: "Vital Signs: Housing Statistics",
+        url: "https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/33?token=LJElA1EksPTgAwtiQGK03FAoQvPDn72DM6B0tUGkMq1Xehp-nDP-LSYbLbn5biw4ITNz8KAb1tvIl4yPN7J-70R-Et7chjdnpnDbTzqvsIWUb3asCNMSKIyRR_1f-kcLL0cAxQl30r3bHEsRAjx4JyUkxy4wjPkk_usQI3k_4S81GiN_rSif5ndciYFCBKcd7po5Opi5H9fR4n9Dp-1CCp_QsDzbVFCs7Bpf7o73SpbDPreOhBvk-paH6x3K4uaW",
+        popupTemplate: {
+          title: "Community Statistical Area: {CSA2010}",
+          content: [{
+            type: "fields",
+            fieldInfos: [{
+              fieldName: "salepr16",
+              label: "Median House Sale Price",
+			  format: {
+				digitSeparator: true,
+				places: 2
+			  }
+            }, {
+              fieldName: "ownroc16",
+              label: "Percent of Homes Occupied by Owner",
+              format: {
+                digitSeparator: true,
+                places: 2
+              }
+            }, {
+              fieldName: "vacant16",
+              label: "Vacancy Rate",
+              format: {
+                digitSeparator: true,
+                places: 2
+              }
+            }, {
+              fieldName: "affordr16",
+              label: "Rental Affordability Index Score",
+              format: {
+                digitSeparator: true,
+                places: 0
+              }
+            }]
+          }]
+        },
+		opacity: 0.68
+      });
+
+      // Create graphics layer and symbol to use for displaying the results of query
+      var resultsLayer = new GraphicsLayer({
+		title: "Query Results"
+	  });
+
+	  /******************************************************
+	  *                   QUERY ASSETS						*
+	  ******************************************************/
+
+	  //Query Task
+	  var allHousingURL =
+		"https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/Baltimore_Affordable_Housing_Final_WFL1/FeatureServer/21?token=6Tdr8qzenyeJUAKkHHiy6a5231Zp83_5GBhWbu3QL7hiDQlDteL91vymSKdJPThR5_hAwzRnpaT0867m0yw40CAGedg9J0NcnXOvzrFuLfHcHpehl2EUQuXlCW8LfBS8y56JPansg6YXM2ysVLrUGhTWiWcTFKfUaT6YL39xMuz2FOoAUKJ3QeKGTfLIGy5MhQPRR8nNzOYGdVDpPemvfGrUjrekj-7uCApdoAACTI9hjW_AxjEWQnyV_QS8hCus";
+
+      var qTask = new QueryTask({
+        url: allHousingURL
+      });
+
+      // Define the popup content for Query Results
+      var popupTemplate = {
+        title: "{HousingType}",
+        fieldInfos: [{
+          fieldName: "SALEPR16",
+          label: "Median House Sale Price",
+		  format: {
+			places: 0,
+			digitSeparator: true
+		  }
+        }, {
+          fieldName: "OWNROC16",
+          label: "Percent Owner Occupied",
+          format: {
+            places: 3,
+            digitSeperator: true
+          }
+        }, {
+          fieldName: "VACANT16",
+          label: "Vacancy Rate",
+          format: {
+            places: 3,
+            digitSeperator: true
+          }
+        }, {
+          fieldName: "AFFORDR16",
+          label: "Rental Affordability Index Score",
+          format: {
+            places: 0,
+            digitSeperator: true
+          }
+        }, {
+          fieldName: "UNEMPL16",
+          label: "Unemployment Rate",
+          format: {
+            places: 3,
+            digitSeperator: true
+          }
+        }, {
+          fieldName: "HHPOV16",
+          label: "Percent Households Under Poverty Line",
+          format: {
+            places: 3,
+            digitSeperator: true
+          }
+        }],
+        content: "<br><b>Neighborhood Statistics:</b><br>" +
+          "<br><b>Median House Sale Price:</b> ${SALEPR16}" +
+		  "<br><b>Percent Owner Occupied:</b> {OWNROC16}%" +
+          "<br><b>Vacancy Rate:</b> {VACANT16}%" +
+          "<br><b>Rental Affordability Index Score:</b> {AFFORDR16}" +
+          "<br><b>Unemployment Rate:</b> {UNEMPL16}%" +
+          "<br><b>Percent of Households Under Poverty Line:</b> {HHPOV16}%"
+      };
+
+
+	  /***************************************************
+	  *				  Set up map and view                *
+	  ***************************************************/
+
+      var map = new Map({
+        basemap: "streets",
+		layers: [
+		layer,
+		resultsLayer,
+		transitGroupLayer,
+		emergencyGroupLayer,
+		foodDeserts,
+		workRetail,
+		housingGroupLayer
+		]
+      });
+
+      var view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [-76.6093, 39.2992],
+        zoom: 13
+      });
+
+
+	  /*****************************************************************
+	  *         Read from infoDiv and generate Renderer w/ params      *
+	  *****************************************************************/
+
+	  var fieldSelect, classSelect, numClassesInput;
+
+      // Generate a new renderer each time the user changes an input parameter
+      view.when(function(){
+
+        fieldSelect = document.getElementById("field-select");
+        fieldSelect.addEventListener("change", generateRenderer);
+
+        classSelect = document.getElementById("class-select");
+        classSelect.addEventListener("change", generateRenderer);
+
+        numClassesInput = document.getElementById("num-classes");
+        numClassesInput.addEventListener("change", generateRenderer);
+
+        generateRenderer();
+      });
+
+      function generateRenderer(){
+        var fieldLabel = fieldSelect.options[fieldSelect.selectedIndex].text;
+
+        var params = {
+          layer: layer,
+          field: fieldSelect.value,
+          basemap: map.basemap,
+          classificationMethod: classSelect.value,
+          numClasses: parseInt(numClassesInput.value),
+          legendOptions: {
+            title: fieldLabel
+          }
+        };
+
+        // generate the renderer and set it on the layer
+        colorRendererCreator.createClassBreaksRenderer(params)
+          .then(function(response){
+            layer.renderer = response.renderer;
+
+            if(!map.layers.includes(layer)){
+              map.add(layer);
+            }
+          });
+      }
+
+	  /*******************************************
+	  *			      Set up Widgets            *
+	  *******************************************/
+	  var basemapToggle = new BasemapToggle({
+		view: view,
+		nextBasemap: "hybrid"
+	  });
+
+	  var searchWidget = new Search({
+		view: view
+	  });
+
+	  var layerList = new LayerList({
+	    view: view
+	  });
+
+	  /**************************************************************
+	  *			Read optionsDiv and execute Query w/ params         *
+	  **************************************************************/
+	  var params = new Query({
+        returnGeometry: true,
+        outFields: ["*"]
+      });
+      // Call doQuery() each time the button is clicked
+      view.when(function() {
+        view.ui.add("optionsDiv", "bottom-right");
+        document.getElementById("doBtn").addEventListener("click",
+          doQuery);
+      });
+
+      var attributeName = document.getElementById("attSelect");
+      var expressionSign = document.getElementById("signSelect");
+      var value = document.getElementById("valSelect");
+
+      // Executes each time the button is clicked
+      function doQuery() {
+        // Clear the results from a previous query
+        resultsLayer.removeAll();
+
+        params.where = attributeName.value + expressionSign.value + value.value;
+
+        qTask.execute(params)
+          .then(getResults)
+          .catch(promiseRejected);
+      }
+
+      function getResults(response) {
+
+        // Loop through each of the results and assign a symbol and PopupTemplate
+        // to each so they may be visualized on the map
+        var qResults = response.features.map(function(
+          feature) {
+
+          feature.symbol = {
+            type: "simple-marker",
+			size: 20,
+			outline: {
+			  width: 0.8,
+			  color: "blue"
+			}
+          };
+
+          feature.popupTemplate = popupTemplate;
+          return feature;
+        });
+
+        resultsLayer.addMany(qResults);
+
+        // go to query result graphics
+        view.goTo(qResults).then(function() {
+          view.popup.open({
+            features: qResults,
+            featureMenuOpen: true,
+            updateLocationEnabled: true
+          });
+        });
+
+        // print the number of results returned to the user
+        document.getElementById("printResults").innerHTML = qResults.length +
+          " results found!";
+      }
+
+      // Called each time the promise is rejected
+      function promiseRejected(error) {
+        console.error("Promise rejected: ", error.message);
+      }
+
+
+	  /***************************************
+	  *         Add UI Elements to View     *
+	  ***************************************/
+      view.ui.add(new Legend({
+        view: view,
+		layerInfos: [{
+		  layer: layer
+		}]
+      }), "bottom-left");
+
+      view.ui.add("infoDiv", "top-right");
+	  view.ui.add(searchWidget, {
+		position: "top-left",
+		index: 2
+	  });
+
+	  view.ui.add(basemapToggle, "top-right");
+
+	  view.ui.add(layerList, {
+		position: "top-left"
+	  });
+
+    });
+  </script>
+</head>
+
+<body>
+  <div id="viewDiv"></div>
+  <div id="infoDiv" class="esri-widget">
+    Select Field:
+    <select id="field-select" class="esri-widget">
+      <option value="salepr16">Median House Sale Price</option>
+      <option value="ownroc16" selected>Percent of Houses Occupied by Owner</option>
+      <option value="vacant16">Vacancy Rate</option>
+      <option value="affordr16">Rental Affordability Index Score</option>
+    </select>
+    Classification:
+    <select id="class-select" class="esri-widget">
+      <option value="equal-interval" selected>Equal interval</option>
+      <option value="quantile">Quantile</option>
+      <option value="natural-breaks">Natual Breaks</option>
+      <option value="standard-deviation">Standard Deviation</option>
+    </select>
+    Breaks: <input type="number" id="num-classes" class="esri-widget" value="5">
+  </div>
+  <div class="esri-widget" id="optionsDiv">
+    <h2>Home Equity Comparison</h2>
+    <select class="esri-widget" id="attSelect">
+      <option value="salepr16" selected>Median House Sale Price</option>
+    </select>
+    <select class="esri-widget" id="signSelect">
+      <option value="<">is less than</option>
+      <option value=">">is greater than</option>
+      <option value="=">is equal to</option>
+    </select>
+    <select class="esri-widget" id="valSelect">
+      <option value="50000">$50,000</option>
+      <option value="100000">$100,000</option>
+      <option value="140000">$140,000</option>
+      <option value="205000">$205,000</option>
+      <option value="350000">$350,000</option>
+    </select>
+    <br>
+    <br>
+    <button class="esri-widget" id="doBtn">Query</button>
+    <br>
+    <p><span id="printResults"></span></p>
+  </div>
+</body>
+
+</html>
