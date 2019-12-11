@@ -18,7 +18,8 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: Your awesome title
+title: Yellow Pages
+tab_title: THE portfolio
 email: your-email@example.com
 description: >- # this means to ignore newlines until "baseurl:"
   Write an awesome description for your new site here. You can edit this
@@ -30,18 +31,22 @@ twitter_username: jekyllrb
 github_username:  jekyll
 
 # Build settings
-theme: "minima"
+theme: jekyll-swiss
+theme_color: yellow
+highligher: rouge
 plugins:
   - jekyll-feed
+  - jekyll-seo-tag
 
-defaults:
-  -
-    scope:
-      path: ""
-      type: "post"
-    values:
-      layout: "post"
-      title: "My Title"
+# defaults:
+#   -
+#     scope:
+#       path: "assets/img"
+#       type: "post"
+#     values:
+#       image: true
+#       layout: "post"
+#       title: "My Title"
 
 # Exclude from processing.
 # The following items will not be processed, by default.
